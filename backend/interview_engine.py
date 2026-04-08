@@ -1,4 +1,3 @@
-# interview_engine.py
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
@@ -8,15 +7,19 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 
-def generate_first_question(resume_text: str) -> str:
+def generate_first_question(resume_text: str, jd: str = "", mood: str = "Professional") -> str:
     prompt = f"""
-You are a friendly senior software engineering interviewer.
+You are a senior software engineering interviewer conducting a {mood} interview.
 
 Candidate Resume:
 {resume_text}
 
-Ask ONE short, natural, and engaging first technical question based on the candidate's most recent or strongest project.
-Keep the question to 1-2 short sentences maximum. Make it sound like a real human interviewer.
+Job Description:
+{jd or "General software engineering role"}
+
+Ask ONE short, warm, and natural first question.
+Start light — don't jump into deep technical details immediately.
+Make it engaging and human, based on the candidate's most recent or strongest project/experience.
 
 Return ONLY the question. No extra text.
 """
