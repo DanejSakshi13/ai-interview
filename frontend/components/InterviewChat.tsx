@@ -149,10 +149,10 @@ export default function InterviewChat({
     setMessages((prev) => [...prev, { role: "user", text: userAnswer.trim() }]);
     setInput("");
     setLoading(true);
-
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     try {
-      const res = await fetch("http://127.0.0.1:8000/answer-question", {
-        method: "POST",
+const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
+         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           resume_text: resumeText,

@@ -30,7 +30,7 @@ export default function ResumeUpload() {
   }, []);
 
   const moods = ["Professional", "Friendly", "Strict Technical", "Behavioral Focused", "System Design Heavy", "Mixed"];
-
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const handleUpload = async () => {
     if (!file) return;
     setLoading(true);
@@ -42,7 +42,7 @@ export default function ResumeUpload() {
     formData.append("mood", mood);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/upload-resume", {
+      const res = await fetch(`${API_BASE}/upload-resume`, {   // ← Updated here
         method: "POST",
         body: formData,
       });
