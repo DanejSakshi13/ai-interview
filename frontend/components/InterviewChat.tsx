@@ -8,6 +8,19 @@ type Message = {
   score?: string;
 };
 
+// Extend Window type for SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
 export default function InterviewChat({
   firstQuestion,
   resumeText,
@@ -38,6 +51,9 @@ export default function InterviewChat({
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // API Base URL
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
   // Start interview with countdown + first question
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -62,11 +78,14 @@ export default function InterviewChat({
 
   // Speech Recognition
   useEffect(() => {
-    // const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
     const SpeechRecognitionAPI = 
-  (window as any).SpeechRecognition || 
-  (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI) return;
+      (window as any).SpeechRecognition || 
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionAPI) {
+      console.warn("Speech Recognition API not supported in this browser.");
+      return;
+    }
 
     const rec = new SpeechRecognitionAPI();
     rec.continuous = true;
@@ -89,6 +108,7 @@ export default function InterviewChat({
 
     rec.onerror = () => setIsListening(false);
     rec.onend = () => setIsListening(false);
+
     recognitionRef.current = rec;
   }, []);
 
@@ -152,10 +172,10 @@ export default function InterviewChat({
     setMessages((prev) => [...prev, { role: "user", text: userAnswer.trim() }]);
     setInput("");
     setLoading(true);
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
     try {
-const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
-         method: "POST",
+      const res = await fetch(`${API_BASE}/answer-question`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           resume_text: resumeText,
@@ -204,7 +224,7 @@ const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
     setAvgScore(average);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/generate-report", {
+      const res = await fetch(`${API_BASE}/generate-report`, {   // ← Also fixed here
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume_text: resumeText, jd, mood, messages }),
@@ -229,6 +249,7 @@ const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
     }
   };
 
+  // Report Screen
   if (showReport) {
     return (
       <div className="min-h-screen bg-black text-white p-8">
@@ -277,7 +298,7 @@ const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages Area */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 overflow-y-auto">
         <div className="space-y-12 pb-32">
           {messages.map((msg, i) => (
@@ -309,49 +330,34 @@ const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
       {!interviewEnded && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-950 border border-white/10 rounded-3xl px-8 py-6 shadow-2xl flex items-center gap-5 z-50">
           {isVoiceMode ? (
-            // Voice Controls with Play/Pause/Resume
             <div className="flex items-center gap-4">
-              {/* Pause / Resume */}
-              {isSpeaking || isPaused ? (
+              {(isSpeaking || isPaused) && (
                 <>
                   {isPaused ? (
-                    <button
-                      onClick={resumeSpeaking}
-                      className="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl flex items-center gap-2"
-                    >
+                    <button onClick={resumeSpeaking} className="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">
                       ▶ Resume
                     </button>
                   ) : (
-                    <button
-                      onClick={pauseSpeaking}
-                      className="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl flex items-center gap-2"
-                    >
+                    <button onClick={pauseSpeaking} className="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">
                       ⏸ Pause
                     </button>
                   )}
 
-                  <button
-                    onClick={stopSpeaking}
-                    className="px-8 py-4 border border-red-600 text-red-400 hover:bg-red-950 rounded-2xl"
-                  >
+                  <button onClick={stopSpeaking} className="px-8 py-4 border border-red-600 text-red-400 hover:bg-red-950 rounded-2xl">
                     ⏹ Stop
                   </button>
                 </>
-              ) : null}
+              )}
 
-              {/* Mic Button */}
               <button
                 onClick={toggleListening}
                 className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl transition-all border-4 ${
-                  isListening
-                    ? "bg-red-600 border-red-500 animate-pulse"
-                    : "bg-white text-black border-white hover:scale-105"
+                  isListening ? "bg-red-600 border-red-500 animate-pulse" : "bg-white text-black border-white hover:scale-105"
                 }`}
               >
                 {isListening ? "●" : "🎤"}
               </button>
 
-              {/* Repeat Question */}
               <button
                 onClick={() => speak(messages[messages.length - 1]?.text || "")}
                 className="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl"
@@ -360,7 +366,6 @@ const res = await fetch(`${API_BASE}/answer-question`, {   // ← Updated here
               </button>
             </div>
           ) : (
-            // Text Mode
             <div className="flex w-[620px] gap-4">
               <input
                 value={input}
