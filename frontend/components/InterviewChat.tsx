@@ -62,7 +62,10 @@ export default function InterviewChat({
 
   // Speech Recognition
   useEffect(() => {
-    const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionAPI = 
+  (window as any).SpeechRecognition || 
+  (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) return;
 
     const rec = new SpeechRecognitionAPI();
